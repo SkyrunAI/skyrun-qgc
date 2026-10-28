@@ -7,7 +7,7 @@ import QGroundControl.Controls
 /// Takes a typed instruction and replaces the plan with the mission it describes.
 Rectangle {
     id: root
-    width: ScreenTools.defaultFontPixelWidth * 60
+    width: Math.min(ScreenTools.defaultFontPixelWidth * 60, parent.width - x - _margin)
     height: layout.height + (_margin * 2)
     color: qgcPal.windowPanel
     radius: ScreenTools.defaultBorderRadius

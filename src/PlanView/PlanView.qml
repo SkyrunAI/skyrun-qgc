@@ -627,7 +627,7 @@ Item {
                         objectName: "planToolStrip_copilotButton"
                         text: qsTr("Copilot")
                         iconSource: "/res/pencil.svg"
-                        visible: toolStrip._isMissionLayer
+                        visible: toolStrip._isMissionLayer && !_planMasterController.controllerVehicle.rover
                         checkable: true
                         onTriggered: {
                             _showCopilot = !_showCopilot

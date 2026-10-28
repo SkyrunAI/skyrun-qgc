@@ -12,8 +12,10 @@
 
 #include "Fact.h"
 #include "MissionController.h"
+#include "MultiVehicleManager.h"
 #include "QGCApplication.h"
 #include "SimpleMissionItem.h"
+#include "Vehicle.h"
 
 static const char* kSystemPrompt =
     "You plan drone missions for QGroundControl. Reply with nothing but a JSON array of mission "
@@ -130,5 +132,12 @@ void MissionCopilot::_build(const QJsonArray& steps)
 QGeoCoordinate MissionCopilot::_home() const
 {
     const QGeoCoordinate override = qgcApp()->homeOverride();
-    return override.isValid() ? override : _missionController->plannedHomePosition();
+    if (override.isValid()) {
+        return override;
+    }
+    Vehicle* vehicle = MultiVehicleManager::instance()->activeVehicle();
+    if (vehicle && vehicle->homePosition().isValid()) {
+        return vehicle->homePosition();
+    }
+    return _missionController->plannedHomePosition();
 }
