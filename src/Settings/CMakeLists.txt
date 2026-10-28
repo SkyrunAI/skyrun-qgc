@@ -37,6 +37,8 @@ target_sources(
             LogViewerSettings.h
             MavlinkSettings.cc
             MavlinkSettings.h
+            MissionCopilotSettings.cc
+            MissionCopilotSettings.h
             OfflineMapsSettings.cc
             OfflineMapsSettings.h
             PlanViewSettings.cc

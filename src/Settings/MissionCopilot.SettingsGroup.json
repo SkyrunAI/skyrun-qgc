@@ -1,0 +1,13 @@
+{
+    "version": 1,
+    "fileType": "FactMetaData",
+    "QGC.MetaData.Facts": [
+        {
+            "name": "apiKey",
+            "shortDesc": "Anthropic API key used to turn typed instructions into mission items",
+            "type": "string",
+            "default": "",
+            "label": "Anthropic API key"
+        }
+    ]
+}

@@ -5,6 +5,7 @@
 
 #include <QtCore/QCommandLineParser>
 #include <QtCore/QStringList>
+#include <QtPositioning/QGeoCoordinate>
 
 namespace QGCCommandLineParser {
 
@@ -38,6 +39,7 @@ struct CommandLineParseResult
     std::optional<QString> loggingOptions;
     bool logOutput = false;
     bool simpleBootTest = false;
+    std::optional<QGeoCoordinate> home;   ///< Overrides the vehicle's home position for mission planning
 
     // --- Test options (command-line parsing only in QGC_UNITTEST_BUILD) ---
     bool runningUnitTests = false;
@@ -95,6 +97,10 @@ AppMode determineAppMode(const CommandLineParseResult& args);
 /// @brief Validate a --system-id value
 /// @return The MAVLink system id (1-4294967295), or std::nullopt if the value is invalid
 std::optional<quint32> parseSystemId(const QString& value);
+
+/// @brief Validate a --home value of the form <lat>,<lon>
+/// @return The coordinate, or std::nullopt unless both parts are numbers in range
+std::optional<QGeoCoordinate> parseHome(const QString& value);
 
 /// @brief Validate a --unittest-shard value of the form <index>/<count>
 /// @return The 1-based shard index and shard count, or std::nullopt unless 1 <= index <= count

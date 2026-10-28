@@ -29,6 +29,7 @@ qt_add_qml_module(
         FWLandingPatternMapVisual.qml
         GeoFenceEditor.qml
         GeoFenceMapVisuals.qml
+        MissionCopilotPanel.qml
         MissionDefaultsEditor.qml
         MissionItemEditor.qml
         MissionItemEditorLoader.qml
