@@ -20,7 +20,8 @@ return to launch, because that is what QGroundControl's own Land button does.
 
 ## Before it works
 
-The Copilot calls Anthropic's API. Put a key in **Application Settings → Plan View → Copilot**.
+The Copilot shells out to the `claude` command, so Claude Code has to be installed and signed in.
+There is no API key to manage.
 
 Home comes from the connected vehicle. With no vehicle, give it one to plan around:
 
@@ -67,6 +68,4 @@ git fetch upstream && git rebase upstream/master
 | `src/MissionManager/MissionController.{h,cc}` | Owns the copilot and exposes it to QML |
 | `src/PlanView/MissionCopilotPanel.qml` | The box you type in |
 | `src/PlanView/PlanView.qml` | The Copilot button and the panel |
-| `src/Settings/MissionCopilotSettings.*`, `MissionCopilot.SettingsGroup.json` | The API key |
-| `src/AppSettings/pages/PlanView.SettingsUI.json` | Puts the key in settings |
 | `src/Utilities/QGCCommandLineParser.{h,cc}`, `src/QGCApplication.{h,cc}` | `--home` |

@@ -6,8 +6,7 @@
 
 class MissionController;
 class QJsonArray;
-class QNetworkAccessManager;
-class QNetworkReply;
+class QProcess;
 
 /// Turns a typed instruction into takeoff, waypoint and land items in the Plan view.
 class MissionCopilot : public QObject
@@ -20,7 +19,7 @@ class MissionCopilot : public QObject
 public:
     explicit MissionCopilot(MissionController* missionController);
 
-    bool busy() const { return _reply != nullptr; }
+    bool busy() const { return _claude != nullptr; }
 
     /// Replaces the plan with the mission the model builds for this instruction.
     Q_INVOKABLE void ask(const QString& instruction);
@@ -32,11 +31,10 @@ signals:
     void said(const QString& text);
 
 private:
-    void _handleReply();
+    void _handleFinished();
     void _build(const QJsonArray& steps);
     QGeoCoordinate _home() const;
 
     MissionController* _missionController = nullptr;
-    QNetworkAccessManager* _network = nullptr;
-    QNetworkReply* _reply = nullptr;
+    QProcess* _claude = nullptr;
 };

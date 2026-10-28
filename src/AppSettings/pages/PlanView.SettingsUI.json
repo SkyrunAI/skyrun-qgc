@@ -35,15 +35,6 @@
                     "showWhen": "QGroundControl.settingsManager.planViewSettings.useNewPlanPanel.rawValue"
                 }
             ]
-        },
-        {
-            "heading": "Copilot",
-            "keywords": ["copilot", "anthropic", "api key", "instruction"],
-            "controls": [
-                {
-                    "setting": "missionCopilotSettings.apiKey"
-                }
-            ]
         }
     ]
 }
