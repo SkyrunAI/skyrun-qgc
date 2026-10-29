@@ -129,11 +129,6 @@ void MissionCopilot::_handleFinished()
 
 void MissionCopilot::_build(const QJsonArray& missions)
 {
-    const QGeoCoordinate home = _home();
-    if (!home.isValid()) {
-        emit said(tr("No home position. Connect a vehicle, or start QGroundControl with --home <lat>,<lon>."));
-        return;
-    }
     if (missions.isEmpty()) {
         emit said(tr("No mission in the reply."));
         return;
@@ -144,9 +139,11 @@ void MissionCopilot::_build(const QJsonArray& missions)
 
     // The Plan view holds one aircraft's mission at a time, so each other aircraft's mission is
     // built here in turn and saved out. The last one built is the one left on screen to review.
+    const QGeoCoordinate fallback = _home();
     PlanMasterController* master = _missionController->masterController();
     Vehicle* shown = master->managerVehicle();
     QJsonArray shownSteps;
+    QGeoCoordinate shownHome = fallback;
     QStringList sent;
 
     for (const QJsonValue& value : missions) {
@@ -155,11 +152,21 @@ void MissionCopilot::_build(const QJsonArray& missions)
         const QJsonArray steps = mission.value("steps").toArray();
         Vehicle* vehicle = id.isDouble() ? vehicleById(id.toInt()) : nullptr;
 
+        // Each aircraft plans around where it is standing, not where another one is
+        const QGeoCoordinate from = (vehicle && vehicle->homePosition().isValid())
+                                        ? vehicle->homePosition()
+                                        : fallback;
+        if (!from.isValid()) {
+            emit said(tr("No home position. Connect a vehicle, or start QGroundControl with --home <lat>,<lon>."));
+            return;
+        }
+
         if (!vehicle || vehicle == shown) {
             shownSteps = steps;
+            shownHome = from;
             continue;
         }
-        _buildOne(steps, home);
+        _buildOne(steps, from);
         const QString file = QDir::tempPath() + QStringLiteral("/qgc-copilot-%1.plan").arg(vehicle->id());
         if (master->saveToFile(file)) {
             _pending.append({ vehicle->id(), file });
@@ -167,7 +174,7 @@ void MissionCopilot::_build(const QJsonArray& missions)
         }
     }
 
-    _buildOne(shownSteps, home);
+    _buildOne(shownSteps, shownHome);
     _missionController->setCurrentPlanViewSeqNum(0, true);
     emit pendingChanged();
 
