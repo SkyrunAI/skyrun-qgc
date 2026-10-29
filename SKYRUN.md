@@ -53,6 +53,12 @@ The Plan view tests cover the Copilot's wiring:
     -R "PlanViewUITest|MissionControllerTest"
 ```
 
+## Living beside a stock QGroundControl
+
+The bundle identifier is `ai.skyrun.qgroundcontrol`, not upstream's, so macOS keeps the two
+apart. Sharing one makes `open` launch whichever it feels like, which is a confusing way to
+find out you have been testing the wrong binary.
+
 ## Tracking upstream
 
 ```sh

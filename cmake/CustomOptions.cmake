@@ -246,8 +246,10 @@ set(QGC_MACOS_PLIST_PATH
     "${CMAKE_SOURCE_DIR}/deploy/macos/MacOSXBundleInfo.plist.in"
     CACHE FILEPATH "macOS Info.plist template path"
 )
+# Distinct from upstream's so macOS can tell this build from a stock QGroundControl
+# beside it; sharing an identifier makes `open` launch whichever one it feels like.
 set(QGC_MACOS_BUNDLE_ID
-    "${QGC_PACKAGE_NAME}"
+    "ai.skyrun.qgroundcontrol"
     CACHE STRING "macOS bundle identifier"
 )
 set(QGC_MACOS_ICON_PATH
