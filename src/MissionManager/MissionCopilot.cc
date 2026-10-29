@@ -8,22 +8,28 @@
 #include <QtCore/QJsonObject>
 #include <QtCore/QProcess>
 #include <QtCore/QStandardPaths>
+#include <QtCore/QTemporaryDir>
 #include <QtCore/QtMath>
 
 #include "Fact.h"
 #include "MissionController.h"
 #include "MultiVehicleManager.h"
+#include "PlanMasterController.h"
 #include "QGCApplication.h"
+#include "QmlObjectListModel.h"
 #include "SimpleMissionItem.h"
 #include "Vehicle.h"
 
 static const char* kSystemPrompt =
-    "You plan drone missions for QGroundControl. Reply with nothing but a JSON array of mission "
-    "steps, in the order flown. Each step is an object with: \"type\", one of takeoff, waypoint or "
-    "land; \"north_m\", metres north of home; \"east_m\", metres east of home; \"altitude_m\", "
-    "metres above home. Start with takeoff and finish with land. Land brings the aircraft down "
-    "where QGroundControl decides is right for the airframe, so the mission needs no waypoint to "
-    "get home first. No prose, no code fences.";
+    "You plan drone missions for QGroundControl. Reply with nothing but a JSON array of missions, "
+    "one per aircraft. Each mission is an object with \"vehicle\", the aircraft's number, or null "
+    "when the operator named no aircraft; and \"steps\", the mission in the order it is flown. "
+    "Each step is an object with: \"type\", one of takeoff, waypoint, loiter or land; \"north_m\", "
+    "metres north of home; \"east_m\", metres east of home; \"altitude_m\", metres above home. A "
+    "loiter step also takes \"radius_m\", how far from the point to circle, and \"seconds\", how "
+    "long to stay. Orbiting or circling a point is a loiter. Start each mission with takeoff and "
+    "finish with land. Land brings the aircraft down where QGroundControl decides is right for the "
+    "airframe, so a mission needs no waypoint to get home first. No prose, no code fences.";
 
 /// QGroundControl launched from Finder does not inherit the shell's PATH.
 static QString claudePath()
@@ -34,6 +40,18 @@ static QString claudePath()
     }
     return QStandardPaths::findExecutable(QStringLiteral("claude"),
                                           { QDir::homePath() + QStringLiteral("/.local/bin") });
+}
+
+static Vehicle* vehicleById(quint32 id)
+{
+    QmlObjectListModel* vehicles = MultiVehicleManager::instance()->vehicles();
+    for (int i = 0; i < vehicles->count(); i++) {
+        Vehicle* vehicle = vehicles->value<Vehicle*>(i);
+        if (vehicle && vehicle->id() == id) {
+            return vehicle;
+        }
+    }
+    return nullptr;
 }
 
 MissionCopilot::MissionCopilot(MissionController* missionController)
@@ -85,18 +103,60 @@ void MissionCopilot::_handleFinished()
     _build(reply.array());
 }
 
-void MissionCopilot::_build(const QJsonArray& steps)
+void MissionCopilot::_build(const QJsonArray& missions)
 {
     const QGeoCoordinate home = _home();
     if (!home.isValid()) {
         emit said(tr("No home position. Connect a vehicle, or start QGroundControl with --home <lat>,<lon>."));
         return;
     }
-    if (steps.isEmpty()) {
+    if (missions.isEmpty()) {
         emit said(tr("No mission in the reply."));
         return;
     }
 
+    _pending.clear();
+    emit pendingChanged();
+
+    // The Plan view holds one aircraft's mission at a time, so each other aircraft's mission is
+    // built here in turn and saved out. The last one built is the one left on screen to review.
+    PlanMasterController* master = _missionController->masterController();
+    Vehicle* shown = master->managerVehicle();
+    QJsonArray shownSteps;
+    QStringList sent;
+
+    for (const QJsonValue& value : missions) {
+        const QJsonObject mission = value.toObject();
+        const QJsonValue id = mission.value("vehicle");
+        const QJsonArray steps = mission.value("steps").toArray();
+        Vehicle* vehicle = id.isDouble() ? vehicleById(id.toInt()) : nullptr;
+
+        if (!vehicle || vehicle == shown) {
+            shownSteps = steps;
+            continue;
+        }
+        _buildOne(steps, home);
+        const QString file = QDir::tempPath() + QStringLiteral("/qgc-copilot-%1.plan").arg(vehicle->id());
+        if (master->saveToFile(file)) {
+            _pending.append({ vehicle->id(), file });
+            sent.append(QString::number(vehicle->id()));
+        }
+    }
+
+    _buildOne(shownSteps, home);
+    _missionController->setCurrentPlanViewSeqNum(0, true);
+    emit pendingChanged();
+
+    if (_pending.isEmpty()) {
+        emit said(tr("Built %1 mission items.").arg(shownSteps.count()));
+    } else {
+        emit said(tr("Showing this aircraft's mission. %1 also planned, for %2.")
+                      .arg(_pending.count()).arg(sent.join(QStringLiteral(", "))));
+    }
+}
+
+void MissionCopilot::_buildOne(const QJsonArray& steps, const QGeoCoordinate& home)
+{
     _missionController->removeAll();
     _missionController->setHomePosition(home);
 
@@ -119,14 +179,33 @@ void MissionCopilot::_build(const QJsonArray& steps)
         }
 
         // Fixed-wing and VTOL landings come back as complex items, which carry their own altitude
-        if (SimpleMissionItem* simple = qobject_cast<SimpleMissionItem*>(item)) {
+        SimpleMissionItem* simple = qobject_cast<SimpleMissionItem*>(item);
+        if (simple) {
+            if (type == QLatin1String("loiter")) {
+                simple->setCommand(MAV_CMD_NAV_LOITER_TIME);
+                simple->setRadius(step.value("radius_m").toDouble());
+                simple->missionItem().setParam1(step.value("seconds").toDouble());
+            }
             simple->altitude()->setRawValue(step.value("altitude_m").toDouble());
         }
         index++;
     }
+}
 
-    _missionController->setCurrentPlanViewSeqNum(0, true);
-    emit said(tr("Built %1 mission items.").arg(steps.count()));
+void MissionCopilot::send()
+{
+    QStringList sent;
+    for (const QPair<quint32, QString>& plan : _pending) {
+        Vehicle* vehicle = vehicleById(plan.first);
+        if (vehicle) {
+            PlanMasterController::sendPlanToVehicle(vehicle, plan.second);
+            sent.append(QString::number(plan.first));
+        }
+    }
+    _pending.clear();
+    emit pendingChanged();
+    emit said(sent.isEmpty() ? tr("No aircraft to send to.")
+                             : tr("Sent to %1.").arg(sent.join(QStringLiteral(", "))));
 }
 
 QGeoCoordinate MissionCopilot::_home() const

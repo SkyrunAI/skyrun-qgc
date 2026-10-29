@@ -49,6 +49,13 @@ Rectangle {
                 enabled: !_copilot.busy && instruction.text.trim() !== ""
                 onClicked: root._ask()
             }
+
+            QGCButton {
+                text: qsTr("Send to %1").arg(_copilot.pending)
+                visible: _copilot.pending > 0
+                enabled: !_copilot.busy
+                onClicked: _copilot.send()
+            }
         }
 
         QGCLabel {
