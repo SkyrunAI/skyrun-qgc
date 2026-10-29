@@ -165,7 +165,7 @@ void MissionCopilot::_build(const QJsonArray& missions)
     Vehicle* shown = master->managerVehicle();
     QJsonArray shownSteps;
     QGeoCoordinate shownHome = fallback;
-    QStringList sent;
+    QStringList planned;
 
     for (const QJsonValue& value : missions) {
         const QJsonObject mission = value.toObject();
@@ -191,19 +191,28 @@ void MissionCopilot::_build(const QJsonArray& missions)
         const QString file = QDir::tempPath() + QStringLiteral("/qgc-copilot-%1.plan").arg(vehicle->id());
         if (master->saveToFile(file)) {
             _pending.append({ vehicle->id(), file });
-            sent.append(QString::number(vehicle->id()));
+            planned.append(QString::number(vehicle->id()));
         }
     }
 
     _buildOne(shownSteps, shownHome);
     _missionController->setCurrentPlanViewSeqNum(0, true);
+
+    // The aircraft on screen is sent with the rest, so one press covers the fleet
+    if (shown && !shown->isOfflineEditingVehicle()) {
+        const QString file = QDir::tempPath() + QStringLiteral("/qgc-copilot-%1.plan").arg(shown->id());
+        if (master->saveToFile(file)) {
+            _pending.append({ shown->id(), file });
+            planned.append(QString::number(shown->id()));
+        }
+    }
     emit pendingChanged();
 
     if (_pending.isEmpty()) {
         emit said(tr("Built %1 mission items.").arg(shownSteps.count()));
     } else {
-        emit said(tr("Showing this aircraft's mission. %1 also planned, for %2.")
-                      .arg(_pending.count()).arg(sent.join(QStringLiteral(", "))));
+        emit said(tr("Planned for %1: %2. This one is on screen; Send uploads them all.")
+                      .arg(_pending.count()).arg(planned.join(QStringLiteral(", "))));
     }
 }
 

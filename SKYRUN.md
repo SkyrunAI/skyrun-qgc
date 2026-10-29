@@ -24,9 +24,11 @@ Name them and each gets its own mission:
 
 > drone 1 cruise at 20 m to POI 1, drone 2 hover at POI 2, drone 3 orbit POI 3 at 60 m radius
 
-The aircraft you are looking at keeps its mission on screen to review and upload as usual. The
-others are planned and held, and **Send** uploads them. Each one plans around its own home, so
+The aircraft you are looking at keeps its mission on screen to look over. **Send** uploads to all
+of them, that one included, so a fleet is two presses. Each aircraft plans around its own home, so
 aircraft parked apart each fly from where they stand.
+
+To fly them, use QGroundControl's own Fly view: **Select All**, then **Arm** and **Start**.
 
 Nothing is uploaded to an aircraft that is already flying a mission, is a different kind of
 aircraft to the plan, says it is not ready to fly, or reports an unhealthy sensor. It is named,

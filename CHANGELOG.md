@@ -1,5 +1,8 @@
 # Changelog
 
+- Send uploads to every aircraft, the one on screen included, so planning a fleet is Build then
+  Send. Starting them is QGroundControl's own Select All and Start, in the Fly view.
+
 ## v5.2.0-skyrun.2 — 2026-10-29
 
 - The Copilot plans for several aircraft from one instruction. Name them — "drone 1 cruise at
