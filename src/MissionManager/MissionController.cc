@@ -1,5 +1,6 @@
 #include "QmlObjectListModel.h"
 #include "MissionController.h"
+#include "MissionCopilot.h"
 #include "Vehicle.h"
 #include "VehicleSupports.h"
 #include "MissionManager.h"
@@ -44,6 +45,8 @@ MissionController::MissionController(PlanMasterController* masterController, QOb
     , _planViewSettings     (SettingsManager::instance()->planViewSettings())
     , _appSettings          (SettingsManager::instance()->appSettings())
 {
+    _copilot = new MissionCopilot(this);
+
     _resetMissionFlightStatus();
 
     _updateTimer.setSingleShot(true);

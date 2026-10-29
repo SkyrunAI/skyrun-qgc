@@ -38,6 +38,8 @@ target_sources(
         MissionCommandUIInfo.h
         MissionController.cc
         MissionController.h
+        MissionCopilot.cc
+        MissionCopilot.h
         MissionFlightStatus.h
         MissionFlightStatusCalculator.cc
         MissionFlightStatusCalculator.h

@@ -25,6 +25,7 @@ constexpr QLatin1StringView kOptClearCache    = QLatin1StringView("clear-cache")
 constexpr QLatin1StringView kOptLogging       = QLatin1StringView("logging");
 constexpr QLatin1StringView kOptLogOutput     = QLatin1StringView("log-output");
 constexpr QLatin1StringView kOptSimpleBoot    = QLatin1StringView("simple-boot-test");
+constexpr QLatin1StringView kOptHome          = QLatin1StringView("home");
 
 #if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
 // --- Desktop-only options ---
@@ -161,6 +162,12 @@ CommandLineParseResult parseCommandLine()
         QString(kOptSimpleBoot),
         QCoreApplication::translate("main", "Initialize subsystems and exit."));
     (void) parser.addOption(simpleBootOpt);
+
+    const QCommandLineOption homeOpt(
+        QString(kOptHome),
+        QCoreApplication::translate("main", "Plan missions around this home position instead of the vehicle's."),
+        QCoreApplication::translate("main", "lat,lon"));
+    (void) parser.addOption(homeOpt);
 
 #ifdef QGC_UNITTEST_BUILD
     // --- Test options (only in test builds) ---
@@ -339,6 +346,20 @@ CommandLineParseResult parseCommandLine()
         qCDebug(QGCCommandLineParserLog) << "System ID:" << *systemId;
     }
 
+    if (parser.isSet(homeOpt)) {
+        const QString homeStr = parser.value(homeOpt);
+        const std::optional<QGeoCoordinate> home = parseHome(homeStr);
+        if (!home) {
+            out.statusCode = CommandLineParseResult::Status::Error;
+            out.errorString =
+                QCoreApplication::translate("main", "Invalid home position (expected <lat>,<lon>): %1").arg(homeStr);
+            qCWarning(QGCCommandLineParserLog) << out.errorString.value();
+            return out;
+        }
+        out.home = home;
+        qCDebug(QGCCommandLineParserLog) << "Home:" << *home;
+    }
+
     out.clearSettingsOptions = parser.isSet(clearSettingsOpt);
     out.clearCache = parser.isSet(clearCacheOpt);
     if (parser.isSet(loggingOpt)) {
@@ -503,6 +524,21 @@ std::optional<quint32> parseSystemId(const QString& value)
         return std::nullopt;
     }
     return static_cast<quint32>(systemId);
+}
+
+std::optional<QGeoCoordinate> parseHome(const QString& value)
+{
+    const QStringList parts = value.split(QLatin1Char(','));
+    if (parts.size() != 2) {
+        return std::nullopt;
+    }
+    bool latOk = false;
+    bool lonOk = false;
+    const QGeoCoordinate home(parts.at(0).toDouble(&latOk), parts.at(1).toDouble(&lonOk));
+    if (!latOk || !lonOk || !home.isValid()) {
+        return std::nullopt;
+    }
+    return home;
 }
 
 std::optional<std::pair<uint, uint>> parseUnitTestShard(const QString& value)

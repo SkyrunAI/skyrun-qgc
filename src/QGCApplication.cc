@@ -54,6 +54,7 @@ QGCApplication::QGCApplication(int& argc, char* argv[], const QGCCommandLinePars
       _simpleBootTest(cli.simpleBootTest),
       _fakeMobile(cli.fakeMobile),
       _logOutput(cli.logOutput),
+      _homeOverride(cli.home.value_or(QGeoCoordinate())),
       _systemId(cli.systemId.value_or(0))
 {
     _msecsElapsedTime.start();

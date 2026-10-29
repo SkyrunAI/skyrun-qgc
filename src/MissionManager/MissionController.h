@@ -27,6 +27,7 @@ class LandingComplexItem;
 class MissionSettingsItem;
 class TakeoffMissionItem;
 class PlanViewSettings;
+class MissionCopilot;
 class KMLPlanDomDocument;
 class Vehicle;
 
@@ -41,6 +42,7 @@ class MissionController : public PlanElementController
     Q_MOC_INCLUDE("FlightPathSegment.h")
     Q_MOC_INCLUDE("VisualMissionItem.h")
     Q_MOC_INCLUDE("TakeoffMissionItem.h")
+    Q_MOC_INCLUDE("MissionCopilot.h")
 
 public:
     MissionController(PlanMasterController* masterController, QObject* parent = nullptr);
@@ -61,6 +63,7 @@ public:
     Q_PROPERTY(QmlObjectListModel*  directionArrows                 READ directionArrows                CONSTANT)
     Q_PROPERTY(QVariantList          complexMissionItems              READ complexMissionItems             NOTIFY complexMissionItemsChanged)  ///< Each entry is a QVariantMap with keys "canonicalName" (insertion key) and "translatedName" (display string)
     Q_PROPERTY(QGeoCoordinate       plannedHomePosition             READ plannedHomePosition            NOTIFY plannedHomePositionChanged)      ///< Includes AMSL altitude
+    Q_PROPERTY(MissionCopilot*      copilot                         READ copilot                        CONSTANT)                               ///< Builds the mission from a typed instruction
     Q_PROPERTY(bool                 homePositionSet                 READ homePositionSet                NOTIFY homePositionSetChanged)          ///< true: Home position has been set by the user
     Q_PROPERTY(QGeoCoordinate       previousCoordinate              MEMBER _previousCoordinate          NOTIFY planViewStateChanged)
     Q_PROPERTY(FlightPathSegment*   splitSegment                    MEMBER _splitSegment                NOTIFY splitSegmentChanged)             ///< Segment which show show + split ui element
@@ -273,6 +276,7 @@ public:
     QmlObjectListModel* directionArrows             (void) { return &_directionArrows; }
     QVariantList        complexMissionItems          (void) const;
     QGeoCoordinate      plannedHomePosition         (void) const;
+    MissionCopilot*     copilot                     (void) const { return _copilot; }
     bool                homePositionSet             (void) const;
     VisualMissionItem*  currentPlanViewItem         (void) const { return _currentPlanViewItem; }
     TakeoffMissionItem* takeoffMissionItem          (void) const { return _takeoffMissionItem; }
@@ -438,6 +442,7 @@ private:
     QObject                     _transformEditorMarker;          ///< Marker child for TransformEditor delegate
     QmlObjectTreeModel          _visualItemsTree;               // Must be declared after group nodes so it's destroyed first
     MissionSettingsItem*        _settingsItem =                 nullptr;
+    MissionCopilot*             _copilot =                      nullptr;
     PlanViewSettings*           _planViewSettings =             nullptr;
     QmlObjectListModel          _simpleFlightPathSegments;
     QmlObjectListModel          _directionArrows;

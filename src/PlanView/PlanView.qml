@@ -39,6 +39,7 @@ Item {
     property bool   _promptForPlanUsageShowing: false
     property bool   _addROIOnClick: false
     property bool   _addWaypointOnClick: false
+    property bool   _showCopilot: false
 
     // The map is created by editorMapLoader: QtLocation FlightMap or, when enabled, the experimental GeoMap engine
     readonly property var   editorMap: editorMapLoader.item
@@ -542,6 +543,12 @@ Item {
                 value: _addROIOnClick
             }
 
+            Binding {
+                target: copilotButton
+                property: "checked"
+                value: _showCopilot
+            }
+
             ToolStripActionList {
                 id: toolStripActionList
                 model: [
@@ -616,6 +623,17 @@ Item {
                         }
                     },
                     ToolStripAction {
+                        id: copilotButton
+                        objectName: "planToolStrip_copilotButton"
+                        text: qsTr("Copilot")
+                        iconSource: "/res/pencil.svg"
+                        visible: toolStrip._isMissionLayer && !_planMasterController.controllerVehicle.rover
+                        checkable: true
+                        onTriggered: {
+                            _showCopilot = !_showCopilot
+                        }
+                    },
+                    ToolStripAction {
                         text: qsTr("Stats")
                         iconSource: "/res/chevron-double-right.svg"
                         visible: missionStatus.hidden && QGroundControl.corePlugin.options.showMissionStatus
@@ -625,6 +643,15 @@ Item {
             }
 
             model: toolStripActionList.model
+        }
+
+        MissionCopilotPanel {
+            anchors.margins: _toolsMargin
+            anchors.left: toolStrip.right
+            anchors.bottom: parent.bottom
+            z: QGroundControl.zOrderWidgets
+            visible: _showCopilot && _editingLayer == _layerMission
+            missionController: _missionController
         }
 
         // The GeoMap engine shows its own scale next to its camera controls

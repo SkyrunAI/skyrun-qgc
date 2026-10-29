@@ -8,6 +8,7 @@
 #include <QtCore/QTimer>
 #include <QtCore/QTranslator>
 #include <QtGui/QGuiApplication>
+#include <QtPositioning/QGeoCoordinate>
 
 namespace QGCCommandLineParser {
     struct CommandLineParseResult;
@@ -59,6 +60,9 @@ public:
 
     /// @return true: Fake ui into showing mobile interface
     bool fakeMobile() const { return _fakeMobile; }
+
+    /// @return The --home position, invalid if it was not given
+    QGeoCoordinate homeOverride() const { return _homeOverride; }
 
     void setLanguage();
     QQuickWindow *mainRootWindow();
@@ -137,6 +141,7 @@ private:
     bool _uiTestMode = false;    ///< true: QML UI test harness registered its engine via setQmlAppEngine()
     bool _fakeMobile = false;    ///< true: Fake ui into displaying mobile interface
     bool _logOutput = false;    ///< true: Log Qt debug output to file
+    QGeoCoordinate _homeOverride;   ///< Plan missions around this instead of the vehicle's home
     quint32 _systemId = 0;      ///< MAVLink system ID, 0 means not set
     QTime _lastRebootMessageTime;    ///< showRebootAppMessage() debounce state
 
