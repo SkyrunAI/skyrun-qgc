@@ -18,6 +18,21 @@ Copilot in the tool strip. It answers with positions in metres from home, and QG
 turns those into mission items for whichever airframe is selected. On a multirotor, land is a
 return to launch, because that is what QGroundControl's own Land button does.
 
+## Several aircraft at once
+
+Name them and each gets its own mission:
+
+> drone 1 cruise at 20 m to POI 1, drone 2 hover at POI 2, drone 3 orbit POI 3 at 60 m radius
+
+The aircraft you are looking at keeps its mission on screen to review and upload as usual. The
+others are planned and held, and **Send** uploads them. Each one plans around its own home, so
+aircraft parked apart each fly from where they stand.
+
+Nothing is uploaded to an aircraft that is already flying a mission, is a different kind of
+aircraft to the plan, says it is not ready to fly, or reports an unhealthy sensor. It is named,
+with the reason, and keeps its plan — fix the problem and press Send again. You can see the state
+of the aircraft on screen; these are the ones you cannot.
+
 ## Before it works
 
 The Copilot shells out to the `claude` command, so Claude Code has to be installed and signed in.

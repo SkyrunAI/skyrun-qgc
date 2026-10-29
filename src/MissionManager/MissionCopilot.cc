@@ -68,6 +68,27 @@ static Vehicle* vehicleById(quint32 id)
     return nullptr;
 }
 
+/// Why this aircraft must not be given a mission right now, empty if it may have one.
+/// The operator can see the state of the aircraft on screen; these are the others.
+static QString refusal(Vehicle* vehicle, Vehicle* controller)
+{
+    if (vehicle->armed() && (vehicle->flightMode() == vehicle->missionFlightMode())) {
+        return MissionCopilot::tr("already flying a mission");
+    }
+    if ((controller->firmwareType() != vehicle->firmwareType())
+        || (QGCMAVLink::vehicleClass(controller->vehicleType())
+            != QGCMAVLink::vehicleClass(vehicle->vehicleType()))) {
+        return MissionCopilot::tr("not the kind of aircraft this plan was built for");
+    }
+    if (vehicle->readyToFlyAvailable() && !vehicle->readyToFly()) {
+        return MissionCopilot::tr("not ready to fly");
+    }
+    if (!vehicle->allSensorsHealthy()) {
+        return MissionCopilot::tr("reporting an unhealthy sensor");
+    }
+    return QString();
+}
+
 MissionCopilot::MissionCopilot(MissionController* missionController)
     : QObject(missionController)
     , _missionController(missionController)
@@ -225,18 +246,39 @@ void MissionCopilot::_buildOne(const QJsonArray& steps, const QGeoCoordinate& ho
 
 void MissionCopilot::send()
 {
+    Vehicle* controller = _missionController->masterController()->controllerVehicle();
     QStringList sent;
+    QStringList held;
+    QList<QPair<quint32, QString>> keep;
+
     for (const QPair<quint32, QString>& plan : _pending) {
         Vehicle* vehicle = vehicleById(plan.first);
-        if (vehicle) {
-            PlanMasterController::sendPlanToVehicle(vehicle, plan.second);
-            sent.append(QString::number(plan.first));
+        if (!vehicle) {
+            held.append(tr("%1 has gone").arg(plan.first));
+            continue;
         }
+        // A refused aircraft keeps its plan, so fixing the problem and pressing Send is enough
+        const QString why = refusal(vehicle, controller);
+        if (!why.isEmpty()) {
+            held.append(tr("%1 is %2").arg(plan.first).arg(why));
+            keep.append(plan);
+            continue;
+        }
+        PlanMasterController::sendPlanToVehicle(vehicle, plan.second);
+        sent.append(QString::number(plan.first));
     }
-    _pending.clear();
+
+    _pending = keep;
     emit pendingChanged();
-    emit said(sent.isEmpty() ? tr("No aircraft to send to.")
-                             : tr("Sent to %1.").arg(sent.join(QStringLiteral(", "))));
+
+    if (held.isEmpty()) {
+        emit said(tr("Sent to %1.").arg(sent.join(QStringLiteral(", "))));
+    } else if (sent.isEmpty()) {
+        emit said(tr("Sent to nothing. %1.").arg(held.join(QStringLiteral("; "))));
+    } else {
+        emit said(tr("Sent to %1. Held back: %2.")
+                      .arg(sent.join(QStringLiteral(", "))).arg(held.join(QStringLiteral("; "))));
+    }
 }
 
 QGeoCoordinate MissionCopilot::_home() const
