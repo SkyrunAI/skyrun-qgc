@@ -42,6 +42,20 @@ static QString claudePath()
                                           { QDir::homePath() + QStringLiteral("/.local/bin") });
 }
 
+/// The connected aircraft, in the order QGroundControl lists them.
+static QStringList vehicleIds()
+{
+    QStringList ids;
+    QmlObjectListModel* vehicles = MultiVehicleManager::instance()->vehicles();
+    for (int i = 0; i < vehicles->count(); i++) {
+        Vehicle* vehicle = vehicles->value<Vehicle*>(i);
+        if (vehicle) {
+            ids.append(QString::number(vehicle->id()));
+        }
+    }
+    return ids;
+}
+
 static Vehicle* vehicleById(quint32 id)
 {
     QmlObjectListModel* vehicles = MultiVehicleManager::instance()->vehicles();
@@ -68,6 +82,16 @@ void MissionCopilot::ask(const QString& instruction)
         return;
     }
 
+    // The operator says "drone 1"; the aircraft are numbered by MAVLink system id, which is
+    // rarely 1. Give the model the real numbers so it can map between them.
+    QString prompt = QString::fromUtf8(kSystemPrompt);
+    const QStringList ids = vehicleIds();
+    if (!ids.isEmpty()) {
+        prompt += tr(" The aircraft connected now, in order, are %1. Use those numbers for "
+                     "\"vehicle\"; the operator's \"drone 1\" means the first of them.")
+                      .arg(ids.join(QStringLiteral(", ")));
+    }
+
     _claude = new QProcess(this);
     // A neutral directory keeps some other project's CLAUDE.md out of the answer
     _claude->setWorkingDirectory(QDir::tempPath());
@@ -76,7 +100,7 @@ void MissionCopilot::ask(const QString& instruction)
         QStringLiteral("-p"), instruction,
         QStringLiteral("--output-format"), QStringLiteral("text"),
         QStringLiteral("--model"), QStringLiteral("opus"),
-        QStringLiteral("--system-prompt"), QString::fromUtf8(kSystemPrompt),
+        QStringLiteral("--system-prompt"), prompt,
     });
     _claude->closeWriteChannel();
     emit busyChanged();
