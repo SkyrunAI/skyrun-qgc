@@ -1,5 +1,7 @@
 # Changelog
 
+## v5.2.0-skyrun.2 — 2026-10-29
+
 - The Copilot plans for several aircraft from one instruction. Name them — "drone 1 cruise at
   20 m to the north end, drone 2 hover over the shed, drone 3 orbit the mast" — and each gets its
   own mission. The aircraft you are looking at keeps its mission on screen; Send uploads the rest.
